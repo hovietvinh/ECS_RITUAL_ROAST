@@ -9,3 +9,26 @@ module "sg" {
   vpc_id = var.vpc_id
   project_template = var.project_template
 }
+
+module "rds" {
+  source = "../../modules/rds"
+  project_template = var.project_template
+  subnets_db = var.subnets_db
+  db_family = var.db_family
+  db_engine = var.db_engine
+  db_engine_version = var.db_engine_version
+  db_instance_class = var.db_instance_class
+  db_allocated_storage = var.db_allocated_storage
+  db_max_allocated_storage = var.db_max_allocated_storage
+  db_storage_type = var.db_storage_type
+  db_multi_az = var.db_multi_az
+  data_sg_id = module.sg.data_sg_id
+  db_publicly_accessible = var.db_publicly_accessible
+  db_skip_final_snapshot = var.db_skip_final_snapshot
+  db_deletion_protection = var.db_deletion_protection
+  db_port = var.db_port
+  db_name = var.db_name
+  db_username = var.db_username
+  db_manage_master_user_password = var.db_manage_master_user_password
+}
+
