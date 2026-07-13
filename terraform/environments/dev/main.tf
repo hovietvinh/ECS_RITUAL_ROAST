@@ -32,3 +32,13 @@ module "rds" {
   db_manage_master_user_password = var.db_manage_master_user_password
 }
 
+module "alb" {
+  source = "../../modules/alb"
+  project_template = var.project_template
+  lb_internal = var.lb_internal
+  subnets_alb = var.subnets_alb
+  alb_sg_id = []
+  vpc_id = var.vpc_id
+  target_type = var.target_type
+}
+
