@@ -17,19 +17,128 @@ on:
           - dev
 
 env:
-  AWS_REGION: ${{ vars.SUITS_AWS_REGION }}
-  ECS_SERVICE: ${{ vars.SUITS_ECS_SERVICE }}
-  ECS_CLUSTER: ${{ vars.SUITS_ECS_CLUSTER }}
-  ECR_REPOSITORY_NAME: ${{ vars.SUITS_REGISTRY_NAME }}
-  ECR_REGISTRY_URL: ${{ vars.SUITS_REGISTRY_URL }}
-  ECS_TASK_DEFINITION: ${{ vars.SUITS_ECS_TASK_DEFINITION }}
+  ROLE_ARN: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
+  AWS_REGION: ${{ vars.AWS_REGION }}
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  deploy:
-    name: Deploy Suits to ECS
+  resolve_env:
+    name: Resolve environment
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
+    outputs:
+      environment: ${{ steps.map.outputs.environment }}
+    steps:
+      - name: Map branch to environment
+        id: map
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
+          else
+            BRANCH="${{ github.ref_name }}"
+            case "$BRANCH" in
+              dev) echo "environment=dev" >> $GITHUB_OUTPUT ;;
+              *) echo "environment=dev" >> $GITHUB_OUTPUT ;;
+            esac
+          fi
+  deploy:
+    name: Deploy App to ECS
+    runs-on: ubuntu-latest
+    needs: resolve_env
+    environment: ${{ needs.resolve_env.outputs.environment }}
+    env:
+      DEPLOY_ENV: ${{ needs.resolve_env.outputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@d0834ad3a60a024346910e522a81b0002bd37fea
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: gh-infra
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.4
+      
+      - name: Terraform Init
+        working-directory: ./terraform/environments/${{ env.DEPLOY_ENV }}
+        run: |
+          ENV="${{ env.DEPLOY_ENV }}"
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          BUCKET_NAME="ritualroast-${ENV}-terraform-state-${ACCOUNT_ID}"
+          TABLE_NAME="ritualroast-${ENV}-terraform-locks-${ACCOUNT_ID}"
+          
+          terraform init \
+            -backend-config="bucket=${BUCKET_NAME}" \
+            -backend-config="dynamodb_table=${TABLE_NAME}"
+      - name: Get Infrastructure Outputs
+        working-directory: ./terraform/environments/${{ env.DEPLOY_ENV }}
+        run: |
+          
+          echo "ECS_CLUSTER=$(terraform output -raw ecs_cluster)" >> $GITHUB_ENV
+          echo "ECS_SERVICE=$(terraform output -raw ecs_service)" >> $GITHUB_ENV
+          echo "ECR_REPOSITORY_NAME=$(terraform output -raw ecr_repository_name)" >> $GITHUB_ENV
+          echo "ECS_TASK_DEFINITION=$(terraform output -raw ecs_task_definition)" >> $GITHUB_ENV
+          
+          echo "ECR_REGISTRY_URL=$(terraform output -raw ecr_registry_url)" >> $GITHUB_ENV
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@33f92af657bba1882ab79d8621debd2f6769a0c9
+
+      - name: Build, tag, and push image to Amazon ECR
+        working-directory: ./application
+        id: build-image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          FULL_IMAGE_URI="${{ env.ECR_REGISTRY_URL }}/${{ env.ECR_REPOSITORY_NAME }}:${IMAGE_TAG}"
+          LATEST_IMAGE_URI="${{ env.ECR_REGISTRY_URL }}/${{ env.ECR_REPOSITORY_NAME }}:latest"
+
+          echo "Building image: $FULL_IMAGE_URI"
+          docker build -t $FULL_IMAGE_URI .
+          docker tag $FULL_IMAGE_URI $LATEST_IMAGE_URI
+
+          docker push $FULL_IMAGE_URI
+          docker push $LATEST_IMAGE_URI
+
+          echo "image=$FULL_IMAGE_URI" >> $GITHUB_OUTPUT
+        
+      - name: Download Latest Task Definition
+        id: download-task-def
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "${{ env.ECS_TASK_DEFINITION }}" \
+            --query taskDefinition \
+            > task-definition.json
+
+          CONTAINER_NAME=$(jq -r '.containerDefinitions[0].name' task-definition.json)
+          echo "Extracted Container Name: $CONTAINER_NAME"
+
+          echo "task_definition_file=task-definition.json" >> $GITHUB_OUTPUT
+          echo "container_name=$CONTAINER_NAME" >> $GITHUB_OUTPUT
+        
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@cbed19f1b86bbb18f59cfffde7107b93cc9b75da
+        with:
+          task-definition: ${{ steps.download-task-def.outputs.task_definition_file }}
+          container-name: ${{ steps.download-task-def.outputs.container_name }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@7b5ba17dae98c8fd463ddf2cef977d3be43322c5
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
