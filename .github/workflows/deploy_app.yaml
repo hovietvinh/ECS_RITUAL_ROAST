@@ -1,6 +1,11 @@
 name: Deploy Application
 
 on:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'application/**'
   workflow_dispatch:
     inputs:
       environment:
