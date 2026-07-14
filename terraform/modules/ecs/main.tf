@@ -1,5 +1,5 @@
 resource "aws_ecs_cluster" "this" {
-  name = "${project_template}_ecs_cluster"
+  name = "${var.project_template}_ecs_cluster"
 
   setting {
     name  = "containerInsights"
@@ -48,14 +48,7 @@ resource "aws_ecs_task_definition" "this" {
     }
   ])
   
-
-  lifecycle {
-    ignore_changes = [
-      task_definition,
-      desired_count
-    ]
-  }
-
+  # Đã XOÁ block lifecycle ở đây
 }
 
 resource "aws_ecs_service" "this" {
@@ -77,4 +70,10 @@ resource "aws_ecs_service" "this" {
     container_port   = 80
   }
 
+  lifecycle {
+    ignore_changes = [
+      task_definition,
+      desired_count
+    ]
+  }
 }
