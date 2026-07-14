@@ -37,8 +37,21 @@ module "alb" {
   project_template = var.project_template
   lb_internal = var.lb_internal
   subnets_alb = var.subnets_alb
-  alb_sg_id = []
+  alb_sg_id = module.sg.public_sg_id
   vpc_id = var.vpc_id
   target_type = var.target_type
 }
 
+module "ecs" {
+  source = "../../modules/ecs"
+  project_template = var.project_template
+  region = var.region
+  ecs_cpu = var.ecs_cpu
+  ecs_memory = var.ecs_memory
+  db_server = module.rds.db_server
+  db_database = module.rds.db_database
+  db_secret_name= module.rds.db_secret_name
+  subnets_app = var.subnets_app
+  security_groups = module.sg.app_sg_id
+  target_group_arn = module.alb.target_group_arn
+}
