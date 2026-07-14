@@ -1,0 +1,30 @@
+name: Deploy Application
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+
+env:
+  AWS_REGION: ${{ vars.SUITS_AWS_REGION }}
+  ECS_SERVICE: ${{ vars.SUITS_ECS_SERVICE }}
+  ECS_CLUSTER: ${{ vars.SUITS_ECS_CLUSTER }}
+  ECR_REPOSITORY_NAME: ${{ vars.SUITS_REGISTRY_NAME }}
+  ECR_REGISTRY_URL: ${{ vars.SUITS_REGISTRY_URL }}
+  ECS_TASK_DEFINITION: ${{ vars.SUITS_ECS_TASK_DEFINITION }}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy Suits to ECS
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
