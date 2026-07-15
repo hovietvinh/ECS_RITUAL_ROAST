@@ -24,6 +24,7 @@ db_port = 3306
 db_name = "ritualroastdb"
 db_username = "admin"
 db_manage_master_user_password = true
+db_database = "ritualroastdb"
 
 // alb
 lb_internal = false
