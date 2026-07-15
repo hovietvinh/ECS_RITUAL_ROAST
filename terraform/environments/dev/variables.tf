@@ -110,10 +110,6 @@ variable "db_database" {
   type = string
 }
 
-variable "db_secret_name" {
-  type = string
-}
-
 variable "subnets_app" {
   type = list(string)
 }
