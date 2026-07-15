@@ -53,6 +53,22 @@ jobs:
             -backend-config="bucket=${BUCKET_NAME}" \
             -backend-config="dynamodb_table=${TABLE_NAME}"
 
+      - name: Pre-Destroy Cleanup (Empty ECR & Disable ALB Protection)
+        run: |
+          REPO_NAME="ritual-roast-dev-ecr"
+          IMAGES=$(aws ecr list-images --repository-name $REPO_NAME --query 'imageIds[*]' --output json 2>/dev/null || echo "[]")
+          if [ "$IMAGES" != "[]" ] && [ -n "$IMAGES" ]; then
+            aws ecr batch-delete-image --repository-name $REPO_NAME --image-ids "$IMAGES" || true
+          fi
+
+          ALB_NAME="ritual-roast-dev-alb"
+          ALB_ARN=$(aws elbv2 describe-load-balancers --names $ALB_NAME --query "LoadBalancers[0].LoadBalancerArn" --output text 2>/dev/null || echo "")
+          if [ -n "$ALB_ARN" ] && [ "$ALB_ARN" != "None" ]; then
+            aws elbv2 modify-load-balancer-attributes \
+              --load-balancer-arn $ALB_ARN \
+              --attributes Key=deletion_protection.enabled,Value=false || true
+          fi
+
       - name: Terraform Destroy
         working-directory: ./terraform/environments/${{ env.DEPLOY_ENV }}
         run: |
