@@ -100,8 +100,8 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          FULL_IMAGE_URI="${{ env.ECR_REGISTRY_URL }}/${{ env.ECR_REPOSITORY_NAME }}:${IMAGE_TAG}"
-          LATEST_IMAGE_URI="${{ env.ECR_REGISTRY_URL }}/${{ env.ECR_REPOSITORY_NAME }}:latest"
+          FULL_IMAGE_URI="${{ env.ECR_REGISTRY_URL }}:${IMAGE_TAG}"
+          LATEST_IMAGE_URI="${{ env.ECR_REGISTRY_URL }}:latest"
 
           echo "Building image: $FULL_IMAGE_URI"
           docker build -t $FULL_IMAGE_URI .
