@@ -42,10 +42,15 @@ The deployment lifecycle is purposefully decoupled into two independent GitHub A
 
 ### 1. Infrastructure Provisioning Pipeline (`Provision resources to AWS`)
 *   **Purpose:** Manages the complete lifecycle of AWS resources.
+*   **Trigger:** Executed manually via `workflow_dispatch` to maintain strict control over infrastructure changes.
 *   **State Management:** Dynamically configures the Terraform S3 backend and DynamoDB table based on the target AWS Account ID and environment variables.
 *   **Workflow:** Executes `terraform validate`, `plan`, and `apply` to ensure predictable and safe infrastructure updates. 
 
 ### 2. Application Deployment Pipeline (`Deploy Application`)
+*   **Purpose:** Handles the continuous delivery of application code to the ECS cluster.
+*   **Triggers:** Configured for both automated and on-demand deployments:
+    *   **Automated:** Triggers on `push` events to the `dev` branch, restricted specifically to changes within the `application/**` path.
+    *   **Manual:** Supports `workflow_dispatch` with environment selection parameters for flexible, manual overrides.
 *   **Infrastructure State Integration:** Dynamically pulls current infrastructure metadata (Cluster Name, Service Name, ECR URL, ALB DNS) directly from Terraform state outputs (`terraform output -raw`). This creates a seamless bridge between IaC and App deployments.
 *   **Build & Push:** Builds the application Docker image, tags it with the unique Git SHA, and pushes it to the target Amazon ECR repository.
 *   **Zero-Downtime Deployment:** Downloads the active ECS Task Definition, updates the container definition with the newly pushed image URI, and registers the new definition to safely roll out the updated application without service interruption.
