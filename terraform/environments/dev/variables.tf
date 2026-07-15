@@ -101,15 +101,6 @@ variable "ecs_memory" {
   type = string
 }
 
-
-variable "db_server" {
-  type = string
-}
-
-variable "db_database" {
-  type = string
-}
-
 variable "subnets_app" {
   type = list(string)
 }
