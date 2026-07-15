@@ -22,7 +22,7 @@ module "rds" {
   db_max_allocated_storage = var.db_max_allocated_storage
   db_storage_type = var.db_storage_type
   db_multi_az = var.db_multi_az
-  data_sg_id = module.sg.data_sg_id
+  data_sg_id = [module.sg.data_sg_id]
   db_publicly_accessible = var.db_publicly_accessible
   db_skip_final_snapshot = var.db_skip_final_snapshot
   db_deletion_protection = var.db_deletion_protection
@@ -37,7 +37,7 @@ module "alb" {
   project_template = var.project_template
   lb_internal = var.lb_internal
   subnets_alb = var.subnets_alb
-  alb_sg_id = module.sg.public_sg_id
+  alb_sg_id = [module.sg.public_sg_id]
   vpc_id = var.vpc_id
   target_type = var.target_type
 }
@@ -52,6 +52,6 @@ module "ecs" {
   db_database = module.rds.db_database
   db_secret_name= module.rds.db_secret_name
   subnets_app = var.subnets_app
-  security_groups = module.sg.app_sg_id
+  security_groups = [module.sg.app_sg_id]
   target_group_arn = module.alb.target_group_arn
 }
