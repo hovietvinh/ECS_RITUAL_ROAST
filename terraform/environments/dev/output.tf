@@ -19,3 +19,7 @@ output "ecs_service" {
 output "ecs_task_definition" {
   value = module.ecs.ecs_task_definition
 }
+
+output "alb_dns_name" {
+  value       = module.alb.alb_dns_name
+}
