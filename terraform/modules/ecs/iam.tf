@@ -9,7 +9,7 @@ data "aws_iam_policy_document" "ecs_assume_role" {
 }
 
 resource "aws_iam_role" "ecs_execution_role" {
-  name               = "${var.project_template}_ecs_exec_role"
+  name               = "${var.project_template}-ecs-exec-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_assume_role.json
 }
 
@@ -19,12 +19,12 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_role_policy" {
 }
 
 resource "aws_iam_role" "ecs_task_role" {
-  name               = "${var.project_template}_ecs_task_role"
+  name               = "${var.project_template}-ecs-task-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_assume_role.json
 }
 
 resource "aws_iam_role_policy" "ecs_task_secrets_policy" {
-  name = "${var.project_template}_task_secrets_policy"
+  name = "${var.project_template}-task-secrets-policy"
   role = aws_iam_role.ecs_task_role.id
 
   policy = jsonencode({

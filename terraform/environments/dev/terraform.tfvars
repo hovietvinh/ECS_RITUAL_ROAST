@@ -1,7 +1,7 @@
 // shared
 region = "ap-southeast-1"
 env = "dev"
-project_template = "ritual_roast_dev"
+project_template = "ritual-roast-dev"
 vpc_id = "vpc-032af4d3cc9efd312"
 
 //ecr

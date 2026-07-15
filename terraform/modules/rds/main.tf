@@ -1,5 +1,5 @@
 resource "aws_db_subnet_group" "this" {
-  name       = "${var.project_template}_subnet_group"
+  name       = "${var.project_template}-subnet-group"
   subnet_ids = var.subnets_db
 
   tags = {
@@ -8,7 +8,7 @@ resource "aws_db_subnet_group" "this" {
 }
 
 resource "aws_db_parameter_group" "this" {
-  name   = "${var.project_template}_pg"
+  name   = "${var.project_template}-pg"
   family = var.db_family
   parameter {
     name  = "character_set_server"
@@ -32,7 +32,7 @@ resource "aws_db_parameter_group" "this" {
 }
 
 resource "aws_db_instance" "this" {
-  identifier = "${var.project_template}_mysql"
+  identifier = "${var.project_template}-mysql"
   engine = var.db_engine
   engine_version         = var.db_engine_version
 

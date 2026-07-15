@@ -1,11 +1,11 @@
 // public
 resource "aws_security_group" "public_sg" {
-  name        = "${var.project_template}_public_sg"
+  name        = "${var.project_template}-public_sg"
   description = "Allow HTTP and HTTPS traffic from Internet"
   vpc_id      = var.vpc_id
 
   tags = {
-    Name = "${var.project_template}_public_sg"
+    Name = "${var.project_template}-public_sg"
   }
 }
 
@@ -33,12 +33,12 @@ resource "aws_vpc_security_group_egress_rule" "allow_all_outbound" {
 
 // app
 resource "aws_security_group" "app_sg" {
-  name        = "${var.project_template}_app_sg"
+  name        = "${var.project_template}-app-sg"
   description = "Allow HTTP and HTTPS traffic from Public SG"
   vpc_id      = var.vpc_id
 
   tags = {
-    Name = "${var.project_template}_app_sg"
+    Name = "${var.project_template}-app-sg"
   }
 }
 
@@ -65,12 +65,12 @@ resource "aws_vpc_security_group_egress_rule" "app_allow_all_outbound" {
 
 // data
 resource "aws_security_group" "data_sg" {
-  name        = "${var.project_template}_data_sg"
+  name        = "${var.project_template}-data-sg"
   description = "Allow MySQL access from App SG only"
   vpc_id      = var.vpc_id
 
   tags = {
-    Name = "${var.project_template}_data_sg"
+    Name = "${var.project_template}-data-sg"
   }
 }
 

@@ -1,5 +1,5 @@
 resource "aws_ecs_cluster" "this" {
-  name = "${var.project_template}_ecs_cluster"
+  name = "${var.project_template}-ecs-cluster"
 
   setting {
     name  = "containerInsights"
@@ -8,7 +8,7 @@ resource "aws_ecs_cluster" "this" {
 }
 
 resource "aws_ecs_task_definition" "this" {
-  family                   = "${var.project_template}_task"
+  family                   = "${var.project_template}-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = var.ecs_cpu
@@ -52,7 +52,7 @@ resource "aws_ecs_task_definition" "this" {
 }
 
 resource "aws_ecs_service" "this" {
-  name            = "${var.project_template}_service"
+  name            = "${var.project_template}-service"
   cluster         = aws_ecs_cluster.this.id
   task_definition = aws_ecs_task_definition.this.arn
   desired_count   = 2
